@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CreditFlow - Business Loan Application</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React and ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel Standalone for JSX transformation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function CreditFlowApp() {
+            const [currentStep, setCurrentStep] = useState(1);
+            const [applicationId, setApplicationId] = useState('');
+            const [offerStatus, setOfferStatus] = useState('pending');
+            const [formData, setFormData] = useState({
+                loanAmount: 50000,
+                loanPurpose: '',
+                tenure: 6,
+                businessName: '',
+                uen: '',
+                industry: '',
+                yearsInOperation: '',
+                annualRevenue: '',
+                directorName: '',
+                nric: '',
+                email: '',
+                mobile: '',
+                bankName: '',
+                accountNumber: '',
+                accountHolderName: '',
+            });
+            const [documents, setDocuments] = useState({
+                bankStatements: null,
+                acraProfile: null,
+                financialStatements: null,
+            });
+            const [acceptanceChecks, setAcceptanceChecks] = useState({
+                readAgreement: false,
+                confirmAccuracy: false,
+                agreeTerms: false,
+                consentDataProcessing: false,
+            });
+            const [isSubmitting, setIsSubmitting] = useState(false);
+            const [isAccepted, setIsAccepted] = useState(false);
+
+            const loanOffer = {
+                approvedAmount: formData.loanAmount,
+                interestRate: 12,
+                tenure: formData.tenure,
+                monthlyRepayment: Math.round((formData.loanAmount * (1 + 0.12 * formData.tenure / 12)) / formData.tenure),
+                totalRepayment: Math.round(formData.loanAmount * (1 + 0.12 * formData.tenure / 12)),
+                processingFee: Math.round(formData.loanAmount * 0.02),
+            };
+
+            const generateApplicationId = () => {
+                const random = Math.floor(10000 + Math.random() * 90000);
+                return `CF-2024-${random}`;
+            };
+
+            const handleInputChange = (e) => {
+                const { name, value } = e.target;
+                setFormData(prev => ({ ...prev, [name]: value }));
+            };
+
+            const handleFileUpload = (e, docType) => {
+                const file = e.target.files[0];
+                if (file) {
+                    setDocuments(prev => ({ ...prev, [docType]: file.name }));
+                }
+            };
+
+            const handleSubmitApplication = () => {
+                setIsSubmitting(true);
+                setTimeout(() => {
+                    setApplicationId(generateApplicationId());
+                    setIsSubmitting(false);
+                    setCurrentStep(2);
+                    // Simulate offer approval after 3 seconds
+                    setTimeout(() => setOfferStatus('approved'), 3000);
+                }, 1500);
+            };
+
+            const handleAcceptOffer = () => {
+                setIsSubmitting(true);
+                setTimeout(() => {
+                    setIsSubmitting(false);
+                    setIsAccepted(true);
+                }, 1500);
+            };
+
+            const allChecksCompleted = Object.values(acceptanceChecks).every(v => v);
+
+            const StepIndicator = () => (
+                <div className="flex items-center justify-center mb-8 px-4">
+                    {[
+                        { num: 1, label: 'Application' },
+                        { num: 2, label: 'Offer' },
+                        { num: 3, label: 'Acceptance' }
+                    ].map((step, idx) => (
+                        <React.Fragment key={step.num}>
+                            <div className="flex flex-col items-center">
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
+                                    currentStep >= step.num 
+                                        ? 'bg-blue-900 text-white' 
+                                        : 'bg-gray-200 text-gray-500'
+                                }`}>
+                                    {currentStep > step.num ? '✓' : step.num}
+                                </div>
+                                <span className={`text-xs mt-1 ${currentStep >= step.num ? 'text-blue-900 font-medium' : 'text-gray-400'}`}>
+                                    {step.label}
+                                </span>
+                            </div>
+                            {idx < 2 && (
+                                <div className={`w-16 h-1 mx-2 rounded ${currentStep > step.num ? 'bg-blue-900' : 'bg-gray-200'}`} />
+                            )}
+                        </React.Fragment>
+                    ))}
+                </div>
+            );
+
+            const Header = () => (
+                <header className="bg-blue-900 text-white py-4 px-6 shadow-lg">
+                    <div className="max-w-4xl mx-auto flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-teal-400 rounded-lg flex items-center justify-center font-bold text-blue-900">C</div>
+                            <span className="text-xl font-bold">CreditFlow</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                            <span className="bg-teal-400 text-blue-900 px-2 py-1 rounded font-medium">MAS Licensed</span>
+                        </div>
+                    </div>
+                </header>
+            );
+
+            // Screen 1: Application
+            const ApplicationScreen = () => (
+                <div className="max-w-2xl mx-auto">
+                    <div className="text-center mb-6">
+                        <h1 className="text-2xl font-bold text-gray-800">Apply for Business Loan</h1>
+                        <p className="text-gray-500 mt-1">Get a decision within 4 hours</p>
+                    </div>
+
+                    <div className="space-y-6">
+                        {/* Loan Details */}
+                        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                <span className="w-6 h-6 bg-blue-100 text-blue-900 rounded-full flex items-center justify-center text-sm">1</span>
+                                Loan Details
+                            </h2>
+                            
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Loan Amount: <span className="text-blue-900 font-bold">S${formData.loanAmount.toLocaleString()}</span>
+                                    </label>
+                                    <input
+                                        type="range"
+                                        min="20000"
+                                        max="100000"
+                                        step="5000"
+                                        value={formData.loanAmount}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, loanAmount: parseInt(e.target.value) }))}
+                                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-900"
+                                    />
+                                    <div className="flex justify-between text-xs text-gray-400 mt-1">
+                                        <span>S$20,000</span>
+                                        <span>S$100,000</span>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Purpose</label>
+                                        <select
+                                            name="loanPurpose"
+                                            value={formData.loanPurpose}
+                                            onChange={handleInputChange}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        >
+                                            <option value="">Select purpose</option>
+                                            <option value="working_capital">Working Capital</option>
+                                            <option value="inventory">Inventory</option>
+                                            <option value="equipment">Equipment</option>
+                                            <option value="expansion">Expansion</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Tenure</label>
+                                        <div className="flex gap-2">
+                                            {[3, 6, 9, 12].map(months => (
+                                                <button
+                                                    key={months}
+                                                    type="button"
+                                                    onClick={() => setFormData(prev => ({ ...prev, tenure: months }))}
+                                                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                                                        formData.tenure === months
+                                                            ? 'bg-blue-900 text-white'
+                                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                    }`}
+                                                >
+                                                    {months}mo
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-teal-50 rounded-lg p-4 border border-teal-200">
+                                    <p className="text-sm text-teal-800">
+                                        <span className="font-medium">Estimated monthly repayment:</span>{' '}
+                                        <span className="text-lg font-bold">S${loanOffer.monthlyRepayment.toLocaleString()}</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Business Information */}
+                        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                <span className="w-6 h-6 bg-blue-100 text-blue-900 rounded-full flex items-center justify-center text-sm">2</span>
+                                Business Information
+                            </h2>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="col-span-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Business Name</label>
+                                    <input
+                                        type="text"
+                                        name="businessName"
+                                        value={formData.businessName}
+                                        onChange={handleInputChange}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        placeholder="ABC Pte Ltd"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">UEN</label>
+                                    <input
+                                        type="text"
+                                        name="uen"
+                                        value={formData.uen}
+                                        onChange={handleInputChange}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        placeholder="201912345A"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Industry</label>
+                                    <select
+                                        name="industry"
+                                        value={formData.industry}
+                                        onChange={handleInputChange}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    >
+                                        <option value="">Select industry</option>
+                                        <option value="fnb">F&B</option>
+                                        <option value="retail">Retail</option>
+                                        <option value="services">Services</option>
+                                        <option value="logistics">Logistics</option>
+                                        <option value="manufacturing">Manufacturing</option>
+                                        <option value="technology">Technology</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Years in Operation</label>
+                                    <select
+                                        name="yearsInOperation"
+                                        value={formData.yearsInOperation}
+                                        onChange={handleInputChange}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    >
+                                        <option value="">Select</option>
+                                        <option value="<1">&lt; 1 year</option>
+                                        <option value="1-2">1-2 years</option>
+                                        <option value="2-5">2-5 years</option>
+                                        <option value="5+">5+ years</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Annual Revenue</label>
+                                    <select
+                                        name="annualRevenue"
+                                        value={formData.annualRevenue}
+                                        onChange={handleInputChange}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    >
+                                        <option value="">Select</option>
+                                        <option value="<500k">&lt; S$500K</option>
+                                        <option value="500k-1m">S$500K - 1M</option>
+                                        <option value="1m-5m">S$1M - 5M</option>
+                                        <option value="5m+">S$5M+</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Director Information */}
+                        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                <span className="w-6 h-6 bg-blue-100 text-blue-900 rounded-full flex items-center justify-center text-sm">3</span>
+                                Director Information
+                            </h2>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name (as per NRIC)</label>
+                                    <input
+                                        type="text"
+                                        name="directorName"
+                                        value={formData.directorName}
+                                        onChange={handleInputChange}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">NRIC</label>
+                                    <input
+                                        type="text"
+                                        name="nric"
+                                        value={formData.nric}
+                                        onChange={handleInputChange}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        placeholder="S1234567A"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        value={formData.email}
+                                        onChange={handleInputChange}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Mobile</label>
+                                    <input
+                                        type="tel"
+                                        name="mobile"
+                                        value={formData.mobile}
+                                        onChange={handleInputChange}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        placeholder="+65 9123 4567"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Document Upload */}
+                        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                <span className="w-6 h-6 bg-blue-100 text-blue-900 rounded-full flex items-center justify-center text-sm">4</span>
+                                Documents
+                            </h2>
+                            
+                            <div className="space-y-3">
+                                {[
+                                    { key: 'bankStatements', label: 'Bank Statements (last 6 months)', required: true },
+                                    { key: 'acraProfile', label: 'ACRA Business Profile', required: true },
+                                    { key: 'financialStatements', label: 'Financial Statements (optional)', required: false },
+                                ].map(doc => (
+                                    <div key={doc.key} className="flex items-center justify-between p-3 border border-dashed border-gray-300 rounded-lg hover:border-blue-400 transition-colors">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                                                {documents[doc.key] ? (
+                                                    <span className="text-teal-500 text-lg">✓</span>
+                                                ) : (
+                                                    <span className="text-gray-400">📄</span>
+                                                )}
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium text-gray-700">
+                                                    {doc.label} {doc.required && <span className="text-red-500">*</span>}
+                                                </p>
+                                                {documents[doc.key] && (
+                                                    <p className="text-xs text-teal-600">{documents[doc.key]}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <label className="cursor-pointer">
+                                            <span className="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                                                {documents[doc.key] ? 'Replace' : 'Upload'}
+                                            </span>
+                                            <input
+                                                type="file"
+                                                className="hidden"
+                                                accept=".pdf,.jpg,.jpeg,.png"
+                                                onChange={(e) => handleFileUpload(e, doc.key)}
+                                            />
+                                        </label>
+                                    </div>
+                                ))}
+                                <p className="text-xs text-gray-400">Accepted formats: PDF, JPG, PNG (max 10MB)</p>
+                            </div>
+                        </div>
+
+                        {/* Bank Account */}
+                        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                <span className="w-6 h-6 bg-blue-100 text-blue-900 rounded-full flex items-center justify-center text-sm">5</span>
+                                Disbursement Account
+                            </h2>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Bank</label>
+                                    <select
+                                        name="bankName"
+                                        value={formData.bankName}
+                                        onChange={handleInputChange}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    >
+                                        <option value="">Select bank</option>
+                                        <option value="dbs">DBS</option>
+                                        <option value="ocbc">OCBC</option>
+                                        <option value="uob">UOB</option>
+                                        <option value="sc">Standard Chartered</option>
+                                        <option value="maybank">Maybank</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
+                                    <input
+                                        type="text"
+                                        name="accountNumber"
+                                        value={formData.accountNumber}
+                                        onChange={handleInputChange}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    />
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Account Holder Name</label>
+                                    <input
+                                        type="text"
+                                        name="accountHolderName"
+                                        value={formData.accountHolderName}
+                                        onChange={handleInputChange}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={handleSubmitApplication}
+                            disabled={isSubmitting}
+                            className="w-full py-4 bg-blue-900 text-white font-semibold rounded-xl hover:bg-blue-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                            {isSubmitting ? (
+                                <>
+                                    <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                                    Submitting...
+                                </>
+                            ) : (
+                                'Submit Application'
+                            )}
+                        </button>
+                    </div>
+                </div>
+            );
+
+            // Screen 2: Offer
+            const OfferScreen = () => (
+                <div className="max-w-2xl mx-auto">
+                    {offerStatus === 'pending' ? (
+                        <div className="bg-white rounded-xl shadow-sm p-8 border border-gray-100 text-center">
+                            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <span className="text-3xl">⏳</span>
+                            </div>
+                            <h1 className="text-2xl font-bold text-gray-800 mb-2">Application Under Review</h1>
+                            <p className="text-gray-500 mb-6">Reference: <span className="font-mono font-semibold text-blue-900">{applicationId}</span></p>
+                            
+                            <div className="space-y-3 mb-8">
+                                {[
+                                    { label: 'Application Received', done: true },
+                                    { label: 'Document Verification', done: false, current: true },
+                                    { label: 'Credit Assessment', done: false },
+                                    { label: 'Decision', done: false },
+                                ].map((step, idx) => (
+                                    <div key={idx} className="flex items-center gap-3">
+                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-sm ${
+                                            step.done ? 'bg-teal-500 text-white' : step.current ? 'bg-blue-900 text-white animate-pulse' : 'bg-gray-200 text-gray-400'
+                                        }`}>
+                                            {step.done ? '✓' : idx + 1}
+                                        </div>
+                                        <span className={`text-sm ${step.done ? 'text-teal-600' : step.current ? 'text-blue-900 font-medium' : 'text-gray-400'}`}>
+                                            {step.label}
+                                        </span>
+                                        {step.current && <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">In Progress</span>}
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="bg-gray-50 rounded-lg p-4">
+                                <p className="text-sm text-gray-600">Estimated decision time: <span className="font-semibold text-gray-800">Within 4 hours</span></p>
+                                <p className="text-xs text-gray-400 mt-1">We'll notify you via email and SMS</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-6">
+                            <div className="bg-gradient-to-r from-teal-500 to-teal-600 rounded-xl p-6 text-white text-center">
+                                <span className="text-4xl mb-2 block">🎉</span>
+                                <h1 className="text-2xl font-bold mb-1">Good News! You're Approved</h1>
+                                <p className="opacity-90">Reference: <span className="font-mono">{applicationId}</span></p>
+                            </div>
+
+                            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                                <h2 className="text-lg font-semibold text-gray-800 mb-4">Your Loan Offer</h2>
+                                
+                                <div className="grid grid-cols-2 gap-4 mb-6">
+                                    <div className="bg-blue-50 rounded-lg p-4">
+                                        <p className="text-sm text-gray-500">Approved Amount</p>
+                                        <p className="text-2xl font-bold text-blue-900">S${loanOffer.approvedAmount.toLocaleString()}</p>
+                                    </div>
+                                    <div className="bg-gray-50 rounded-lg p-4">
+                                        <p className="text-sm text-gray-500">Interest Rate</p>
+                                        <p className="text-2xl font-bold text-gray-800">{loanOffer.interestRate}% <span className="text-sm font-normal">p.a.</span></p>
+                                    </div>
+                                    <div className="bg-gray-50 rounded-lg p-4">
+                                        <p className="text-sm text-gray-500">Tenure</p>
+                                        <p className="text-2xl font-bold text-gray-800">{loanOffer.tenure} <span className="text-sm font-normal">months</span></p>
+                                    </div>
+                                    <div className="bg-teal-50 rounded-lg p-4">
+                                        <p className="text-sm text-gray-500">Monthly Repayment</p>
+                                        <p className="text-2xl font-bold text-teal-700">S${loanOffer.monthlyRepayment.toLocaleString()}</p>
+                                    </div>
+                                </div>
+
+                                <div className="border-t border-gray-100 pt-4 space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-500">Total Repayment</span>
+                                        <span className="font-semibold">S${loanOffer.totalRepayment.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-500">Processing Fee (2%)</span>
+                                        <span className="font-semibold">S${loanOffer.processingFee.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-500">Disbursement Timeline</span>
+                                        <span className="font-semibold text-teal-600">Within 24 hours</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                                <h3 className="font-semibold text-gray-800 mb-3">Repayment Schedule</h3>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="border-b border-gray-100">
+                                                <th className="text-left py-2 text-gray-500 font-medium">Month</th>
+                                                <th className="text-right py-2 text-gray-500 font-medium">Principal</th>
+                                                <th className="text-right py-2 text-gray-500 font-medium">Interest</th>
+                                                <th className="text-right py-2 text-gray-500 font-medium">Payment</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {Array.from({ length: Math.min(3, loanOffer.tenure) }, (_, i) => (
+                                                <tr key={i} className="border-b border-gray-50">
+                                                    <td className="py-2">{i + 1}</td>
+                                                    <td className="text-right">S${Math.round(loanOffer.approvedAmount / loanOffer.tenure).toLocaleString()}</td>
+                                                    <td className="text-right">S${Math.round(loanOffer.approvedAmount * 0.01).toLocaleString()}</td>
+                                                    <td className="text-right font-medium">S${loanOffer.monthlyRepayment.toLocaleString()}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                    {loanOffer.tenure > 3 && (
+                                        <p className="text-xs text-gray-400 mt-2 text-center">... and {loanOffer.tenure - 3} more months</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-center gap-4 text-xs text-gray-500">
+                                <span className="flex items-center gap-1">✓ No hidden fees</span>
+                                <span className="flex items-center gap-1">✓ MAS Licensed</span>
+                                <span className="flex items-center gap-1">✓ Secure & Encrypted</span>
+                            </div>
+
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-center">
+                                <p className="text-sm text-amber-800">⏰ This offer is valid for <span className="font-semibold">7 days</span></p>
+                            </div>
+
+                            <div className="flex gap-4">
+                                <button className="flex-1 py-3 border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors">
+                                    Download Offer (PDF)
+                                </button>
+                                <button
+                                    onClick={() => setCurrentStep(3)}
+                                    className="flex-1 py-3 bg-blue-900 text-white font-semibold rounded-xl hover:bg-blue-800 transition-colors"
+                                >
+                                    Accept Offer →
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+
+            // Screen 3: Acceptance
+            const AcceptanceScreen = () => (
+                <div className="max-w-2xl mx-auto">
+                    {!isAccepted ? (
+                        <div className="space-y-6">
+                            <div className="text-center mb-6">
+                                <h1 className="text-2xl font-bold text-gray-800">Accept Your Loan</h1>
+                                <p className="text-gray-500 mt-1">Review and confirm your loan agreement</p>
+                            </div>
+
+                            {/* Offer Recap */}
+                            <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm text-gray-500">Loan Amount</p>
+                                        <p className="text-xl font-bold text-blue-900">S${loanOffer.approvedAmount.toLocaleString()}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-sm text-gray-500">Monthly Repayment</p>
+                                        <p className="text-xl font-bold text-gray-800">S${loanOffer.monthlyRepayment.toLocaleString()}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-sm text-gray-500">Tenure</p>
+                                        <p className="text-xl font-bold text-gray-800">{loanOffer.tenure} months</p>
+                                    </div>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-2">Reference: {applicationId}</p>
+                            </div>
+
+                            {/* Agreement */}
+                            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                                <h2 className="font-semibold text-gray-800 mb-3">Loan Agreement</h2>
+                                <div className="bg-gray-50 rounded-lg p-4 h-48 overflow-y-auto text-sm text-gray-600 mb-4">
+                                    <p className="font-semibold mb-2">LOAN AGREEMENT</p>
+                                    <p className="mb-2">This Loan Agreement ("Agreement") is entered into between CreditFlow Pte Ltd ("Lender") and the Borrower identified in the application.</p>
+                                    <p className="font-semibold mt-4 mb-2">1. LOAN TERMS</p>
+                                    <p>Principal Amount: S${loanOffer.approvedAmount.toLocaleString()}</p>
+                                    <p>Interest Rate: {loanOffer.interestRate}% per annum</p>
+                                    <p>Tenure: {loanOffer.tenure} months</p>
+                                    <p>Monthly Repayment: S${loanOffer.monthlyRepayment.toLocaleString()}</p>
+                                    <p className="font-semibold mt-4 mb-2">2. REPAYMENT</p>
+                                    <p>The Borrower agrees to repay the loan in equal monthly installments on the same date each month.</p>
+                                    <p className="font-semibold mt-4 mb-2">3. LATE PAYMENT</p>
+                                    <p>A late payment fee of 2% per month will be charged on overdue amounts.</p>
+                                    <p className="font-semibold mt-4 mb-2">4. EARLY REPAYMENT</p>
+                                    <p>Early repayment is permitted with no penalty after 3 months.</p>
+                                </div>
+                                <button className="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                                    📄 Download Full Agreement (PDF)
+                                </button>
+                            </div>
+
+                            {/* Checkboxes */}
+                            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 space-y-4">
+                                <h2 className="font-semibold text-gray-800 mb-2">Declaration</h2>
+                                
+                                {[
+                                    { key: 'readAgreement', label: 'I have read and understood the loan agreement' },
+                                    { key: 'confirmAccuracy', label: 'I confirm all information provided is accurate' },
+                                    { key: 'agreeTerms', label: 'I agree to the terms and conditions' },
+                                    { key: 'consentDataProcessing', label: 'I consent to credit bureau checks and data processing' },
+                                ].map(item => (
+                                    <label key={item.key} className="flex items-start gap-3 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={acceptanceChecks[item.key]}
+                                            onChange={(e) => setAcceptanceChecks(prev => ({ ...prev, [item.key]: e.target.checked }))}
+                                            className="w-5 h-5 mt-0.5 rounded border-gray-300 text-blue-900 focus:ring-blue-500"
+                                        />
+                                        <span className="text-sm text-gray-700">{item.label}</span>
+                                    </label>
+                                ))}
+                            </div>
+
+                            {/* Final Confirmation */}
+                            <div className="bg-gray-50 rounded-xl p-6 text-center">
+                                <p className="text-gray-600 mb-4">
+                                    By clicking "Confirm & Accept", you are entering into a binding loan agreement for
+                                </p>
+                                <p className="text-3xl font-bold text-blue-900 mb-4">S${loanOffer.approvedAmount.toLocaleString()}</p>
+                                
+                                <button
+                                    onClick={handleAcceptOffer}
+                                    disabled={!allChecksCompleted || isSubmitting}
+                                    className="w-full py-4 bg-teal-600 text-white font-semibold rounded-xl hover:bg-teal-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                >
+                                    {isSubmitting ? (
+                                        <>
+                                            <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                                            Processing...
+                                        </>
+                                    ) : (
+                                        'Confirm & Accept Loan'
+                                    )}
+                                </button>
+                                
+                                <button
+                                    onClick={() => setCurrentStep(2)}
+                                    className="mt-3 text-sm text-gray-500 hover:text-gray-700"
+                                >
+                                    ← Go back to offer
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="bg-white rounded-xl shadow-sm p-8 border border-gray-100 text-center">
+                            <div className="w-20 h-20 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <span className="text-4xl">✅</span>
+                            </div>
+                            <h1 className="text-2xl font-bold text-gray-800 mb-2">Loan Accepted!</h1>
+                            <p className="text-gray-500 mb-6">Your loan agreement has been confirmed</p>
+                            
+                            <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                                <p className="text-sm text-gray-500">Reference Number</p>
+                                <p className="text-xl font-mono font-bold text-blue-900">{applicationId}</p>
+                            </div>
+
+                            <div className="bg-teal-50 border border-teal-200 rounded-lg p-4 mb-6">
+                                <p className="text-teal-800 font-medium">💰 Funds will be disbursed within 24 hours</p>
+                                <p className="text-sm text-teal-600 mt-1">
+                                    To your account ending in ****{formData.accountNumber.slice(-4) || '1234'}
+                                </p>
+                            </div>
+
+                            <div className="space-y-2 text-sm text-gray-600 mb-6">
+                                <p>✓ Confirmation email sent to {formData.email || 'your email'}</p>
+                                <p>✓ SMS notification sent to {formData.mobile || 'your mobile'}</p>
+                            </div>
+
+                            <button className="w-full py-3 border border-blue-900 text-blue-900 font-medium rounded-xl hover:bg-blue-50 transition-colors">
+                                📄 Download Loan Agreement
+                            </button>
+
+                            <div className="mt-8 pt-6 border-t border-gray-100">
+                                <p className="text-sm text-gray-500">Need help?</p>
+                                <p className="text-blue-900 font-medium">support@creditflow.sg | +65 6123 4567</p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+
+            return (
+                <div className="min-h-screen bg-gray-50">
+                    <Header />
+                    <main className="py-8 px-4">
+                        <StepIndicator />
+                        {currentStep === 1 && <ApplicationScreen />}
+                        {currentStep === 2 && <OfferScreen />}
+                        {currentStep === 3 && <AcceptanceScreen />}
+                    </main>
+                </div>
+            );
+        }
+
+        // Render the app
+        ReactDOM.render(<CreditFlowApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>
